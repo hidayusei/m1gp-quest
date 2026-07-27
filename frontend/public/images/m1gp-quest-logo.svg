@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 300" role="img" aria-label="M1GP QUEST logo">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff38a"/>
+      <stop offset="0.42" stop-color="#f5bd22"/>
+      <stop offset="1" stop-color="#b66a0b"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5b5b"/>
+      <stop offset="0.55" stop-color="#d81844"/>
+      <stop offset="1" stop-color="#7c1031"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="0.5" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#312e81"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.55"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#ffffff" flood-opacity="0.95"/>
+    </filter>
+  </defs>
+
+  <path d="M52 179 C96 72 204 35 311 72 C390 99 447 75 526 44 C680 -17 824 50 875 170 C762 130 679 144 588 194 C486 249 373 244 282 202 C200 163 128 153 52 179 Z"
+        fill="#ffffff" opacity="0.92" filter="url(#shadow)"/>
+  <path d="M82 166 C130 97 217 80 307 105 C394 129 464 87 541 62 C675 19 793 73 842 154 C751 125 662 142 577 188 C477 241 371 229 289 191 C211 154 142 142 82 166 Z"
+        fill="url(#blue)" opacity="0.92"/>
+  <path d="M80 199 L191 69 L238 104 L162 213 Z" fill="url(#gold)" stroke="#6b3a0b" stroke-width="7"/>
+  <path d="M760 75 L857 209 L779 229 L710 107 Z" fill="url(#gold)" stroke="#6b3a0b" stroke-width="7"/>
+
+  <text x="460" y="176" text-anchor="middle"
+        font-family="'Arial Black', Impact, sans-serif"
+        font-size="112"
+        font-weight="900"
+        letter-spacing="-4"
+        fill="#38111f"
+        stroke="#fff7a8"
+        stroke-width="18"
+        paint-order="stroke fill"
+        transform="skewX(-9)">M1GP QUEST</text>
+  <text x="460" y="176" text-anchor="middle"
+        font-family="'Arial Black', Impact, sans-serif"
+        font-size="112"
+        font-weight="900"
+        letter-spacing="-4"
+        fill="url(#red)"
+        stroke="#4b1023"
+        stroke-width="4"
+        paint-order="stroke fill"
+        transform="skewX(-9)">M1GP QUEST</text>
+
+  <text x="460" y="218" text-anchor="middle"
+        font-family="'Courier New', monospace"
+        font-size="28"
+        font-weight="900"
+        fill="#fff7ed"
+        stroke="#111827"
+        stroke-width="5"
+        paint-order="stroke fill"
+        letter-spacing="5">MOTION CASTING RPG</text>
+
+  <g transform="translate(804 66) rotate(18)">
+    <path d="M0 -52 L13 -13 L54 0 L13 13 L0 52 L-13 13 L-54 0 L-13 -13 Z"
+          fill="#fef08a" stroke="#ffffff" stroke-width="6"/>
+    <path d="M0 -43 L7 -7 L43 0 L7 7 L0 43 L-7 7 L-43 0 L-7 -7 Z"
+          fill="#60a5fa"/>
+  </g>
+  <g transform="translate(122 72) rotate(-20)">
+    <path d="M0 -42 L11 -11 L44 0 L11 11 L0 42 L-11 11 L-44 0 L-11 -11 Z"
+          fill="#fde047" stroke="#ffffff" stroke-width="5"/>
+  </g>
+</svg>
