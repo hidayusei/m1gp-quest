@@ -4,7 +4,7 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BackendDir = Join-Path $Root "backend"
 $FrontendDir = Join-Path $Root "frontend"
 $BackendPython = Join-Path $BackendDir ".venv\Scripts\python.exe"
-$Cloudflared = "C:\Users\yusei\AppData\Local\Microsoft\WinGet\Packages\Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe\cloudflared.exe"
+$CloudflaredLocal = Join-Path $Root "cloudflared.exe"
 $BackendUrl = "http://127.0.0.1:8000"
 $PcUrl = "http://127.0.0.1:5173/"
 $TunnelTarget = "http://127.0.0.1:5173"
@@ -83,6 +83,17 @@ function Wait-ForUrl {
   return $false
 }
 
+function Find-Cloudflared {
+  if (Test-Path -LiteralPath $CloudflaredLocal) {
+    return $CloudflaredLocal
+  }
+  $command = Get-Command cloudflared.exe -ErrorAction SilentlyContinue
+  if ($command) {
+    return $command.Source
+  }
+  return $null
+}
+
 Write-Header
 Write-Host "Project: $Root"
 
@@ -98,8 +109,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $FrontendDir "package.json"))) {
 if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
   Fail-Launcher "npm.cmd was not found. Install Node.js and reopen this launcher."
 }
-if (-not (Test-Path -LiteralPath $Cloudflared)) {
-  Fail-Launcher "cloudflared.exe was not found: $Cloudflared"
+$Cloudflared = Find-Cloudflared
+if (-not $Cloudflared) {
+  Fail-Launcher "cloudflared.exe was not found. Place it in the repository root or add it to PATH."
 }
 
 $occupiedPorts = @()

@@ -1,6 +1,11 @@
 backend/.venv/
-backend/__pycache__/
-backend/scripts/__pycache__/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 backend/data/raw/*.csv
 backend/data/processed/plots/
 backend/data/processed/segments/
@@ -9,8 +14,17 @@ frontend/*.tsbuildinfo
 frontend/vite.config.js
 frontend/vite.config.d.ts
 npm-debug.log*
-dev-cloudflared.out.log
-dev-cloudflared.err.log
-cloudflared.out.log
-cloudflared.err.log
+*.log
 phone-url-qr.html
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

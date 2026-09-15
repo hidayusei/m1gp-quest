@@ -1,241 +1,210 @@
 # M1GP QUEST
 
-M1GP QUEST is a motion-casting RPG prototype that uses a smartphone accelerometer as an input device. The player holds a phone like a magic staff, starts a casting section, draws a motion shape in the air, and attacks enemies based on the recognized motion.
+**スマートフォンを魔法の杖のように振って操作する、加速度センサを利用したモーション認識RPGのプロトタイプです。**
 
-The current main mode is GAME2. In this mode, the game focuses on three motion commands:
+スマートフォンから連続的に取得した加速度データの中から動作区間を切り出し、形状を認識して、Spiral・Star・Zのゲーム内スキルとして発動します。センサ入力、区間抽出、機械学習・時系列照合、ゲームでのフィードバックを一つの動作するデモにまとめた個人制作です。
 
-| Motion | Skill | MP | Effect |
-|---|---:|---:|---|
-| Spiral | Spiral | 0 | 20 damage |
-| Star | Star | 3 | 60 damage |
-| Z | Z | 3 | Stun the enemy's next attack |
+> このプロジェクトはスマートホームを対象とする現在の研究そのものではありません。連続センサログの区間抽出と分類という共通する考え方を、ゲームとして分かりやすく応用したプロトタイプです。
 
-The game is designed as a demonstration prototype for motion recognition, especially for experimenting with motion segment detection and shape classification from continuous acceleration logs.
+## デモの特徴
 
-## Background
+- スマートフォンのブラウザを入力デバイスとして使用
+- DeviceMotion APIから加速度データを連続取得
+- 意図した動作の開始・終了区間を抽出
+- DTWを優先し、Random Forestをフォールバックとして動作分類
+- 認識結果をターン制RPGのスキルとして即時に可視化
+- PC戦闘画面、スマートフォン入力画面、学習データ収集画面、デバッグ機能を用意
 
-This project started as a prototype for collecting acceleration data from a smartphone browser. At first, the goal was simply to confirm that a phone could send DeviceMotion API values to a PC server, save them as CSV logs, visualize them, and detect motion intervals.
+現在のメインモード `GAME2` では、次の3動作を扱います。
 
-After the logging and detection pipeline became stable, the prototype was extended into a small turn-based battle game. The purpose of the game layer is not only entertainment, but also to make motion recognition easier to demonstrate. A game screen gives immediate feedback when a motion is recognized, and it makes it easier to explain why accurate motion interval estimation matters.
+| Motion | Skill | 消費MP | 効果 |
+|---|---|---:|---|
+| Spiral | Spiral | 0 | 20ダメージ |
+| Star | Star | 3 | 60ダメージ |
+| Z | Z | 3 | 敵の次の攻撃をスタン |
 
-The project gradually moved from single-axis commands such as horizontal, vertical, and thrust-like motions to a shape-based input method. The current version recognizes shape motions such as Spiral, Star, and Z. This makes the game closer to a "motion casting" system: the player casts a skill by drawing a shape with the phone.
+## 処理フロー
 
-## Research Connection
+```text
+スマートフォン
+    ↓ DeviceMotion API
+連続加速度ストリーム
+    ↓
+動作区間の抽出
+    ↓
+トリミング・リサンプリング・正規化
+    ↓
+DTWテンプレート照合 / Random Forest
+    ↓
+動作分類（Spiral / Star / Z / none）
+    ↓
+ゲーム内スキル発動
+```
 
-The main research theme behind this prototype is activity and motion recognition using smartphone acceleration sensors.
+区間の開始・終了がずれると、分類器へ不要なデータや不完全な動作が入力され、認識が不安定になります。本プロトタイプでは、区間抽出と分類を分けて扱うことで、この関係をゲーム上の成否として確認できます。
 
-In a real motion-recognition game, the system must solve two problems:
+## 技術スタック
 
-1. Detect where a meaningful action starts and ends in a continuous sensor stream.
-2. Classify the extracted motion segment into a command or action label.
+| レイヤ | 技術 |
+|---|---|
+| Frontend | React 19, TypeScript, Vite |
+| Backend | Python, 標準HTTPサーバ |
+| Sensor | DeviceMotion API, 3軸加速度データ |
+| Recognition | DTW, Random Forest, scikit-learn |
+| Data Processing | NumPy, pandas |
+| Visualization / Analysis | matplotlib |
+| Demo Connection | cloudflared |
 
-This game keeps those two problems visible. The player continuously streams acceleration data from the phone, but the game should only classify the section that corresponds to the intended casting motion. If the start or end of the motion segment is wrong, the classifier receives noisy data and the skill may fail or be misclassified.
+## システム構成
 
-For that reason, the prototype separates:
+```text
+Smartphone Browser
+  └─ DeviceMotion API
+          │ batched acceleration samples
+          ▼
+Python Backend
+  ├─ センサデータ受信・セッション管理
+  ├─ 動作区間抽出
+  ├─ DTW / Random Forestによる認識
+  ├─ 学習データ保存
+  └─ デモ時はビルド済みFrontendを配信
+          │ recognition result
+          ▼
+React Frontend
+  ├─ PC戦闘画面
+  ├─ スマートフォン入力画面
+  ├─ 学習画面
+  └─ チュートリアル / デバッグパネル
+```
 
-- Trigger detection: detecting the start and end of casting.
-- Shape classification: classifying the motion segment as Spiral, Star, Z, or none.
-
-The backend includes rule-based trigger handling, machine-learning models, and DTW template matching. The project is useful for testing how recognition accuracy changes when the motion interval is cut differently, when training data is added, or when the classification method is changed.
-
-## System Overview
+主なディレクトリ:
 
 ```text
 m1gp-quest/
-  backend/
-    server.py
-    requirements.txt
-    models/
-      shape_classifier.pkl
-      trigger_detector.pkl
-      motion_classifier.pkl
-    data/
-      training/
-      training_trigger/
-  frontend/
-    src/
-    public/
-    dist/
-  StartDemo.bat
-  StartDemo.ps1
-  StartDevDemo.bat
-  StartDevDemo.ps1
-  cloudflared.exe
+├─ backend/
+│  ├─ server.py                 # 受信、区間抽出、認識、ゲームAPI
+│  ├─ scripts/                  # 学習・分析・可視化
+│  ├─ data/training/            # 形状分類用データ
+│  ├─ data/training_trigger/    # トリガ検出用データ
+│  └─ models/                   # 学習済みモデル
+├─ frontend/
+│  ├─ src/                      # React / TypeScript実装
+│  ├─ public/                   # 画像・音声などのデモ素材
+│  └─ dist/                     # ポータブルデモ用ビルド成果物
+├─ StartDevDemo.bat / .ps1      # 開発モード
+└─ StartDemo.bat / .ps1         # ビルド済みデモ
 ```
 
-### Frontend
+## モーション認識
 
-- React + TypeScript
-- PC battle screen
-- Phone sensor screen
-- Training screen
-- Tutorial screen
-- Debug panel
-- Pixel-style UI, sounds, stage backgrounds, battle effects
-- Generic enemy images are used so the repository can be shared safely.
+### 1. 区間抽出
 
-### Backend
+スマートフォンから届く連続加速度データに対し、トリガ動作または画面上の杖ボタンを使って、分類対象となる描画区間を決定します。
 
-- Python HTTP server
-- Receives batched acceleration samples
-- Manages battle motion sessions
-- Saves training data
-- Runs trigger and shape recognition
-- Serves `frontend/dist` in demo mode
+- **Trigger gesture mode:** スマートフォンを前へ突き出して戻す動作で詠唱を開始・確定
+- **Tap wand mode:** 画面上の杖をタップして詠唱を開始・確定
 
-### Phone Input
+Tap wand modeは、トリガ認識の影響を除き、形状認識だけを確認したい場合に利用できます。
 
-The phone browser collects acceleration data with the DeviceMotion API. During play, the phone can be used in two ways:
+### 2. DTWによる形状照合
 
-- Trigger gesture mode: push the phone forward and return it to start or confirm casting.
-- Tap wand mode: tap the wand on the phone screen to start or confirm casting.
+1. 入力区間の前後をトリミング
+2. 時系列を固定長へリサンプリング
+3. 軸ごとに正規化
+4. 保存済みテンプレートとのDTW距離を計算
+5. 最も近いラベルを選択
+6. 距離・信頼度の閾値で不確かな入力を `none` として棄却
 
-Tap wand mode is useful when the focus is shape recognition rather than trigger recognition.
+対象ラベルは `circle`（Spiral）、`star`（Star）、`zigzag`（Z）、`none` です。DTWで判定できない場合はRandom Forestをフォールバックとして使用します。
 
-## Main Game Flow
+### 3. 学習データの分離
 
-1. Start the PC battle screen.
-2. Open the phone URL on a smartphone.
-3. Allow sensor access.
-4. Start streaming from the phone.
-5. Start the battle.
-6. Start casting with a trigger gesture or the wand tap mode.
-7. Draw Spiral, Star, or Z with the phone.
-8. Confirm casting.
-9. The recognized skill is activated.
-10. The enemy acts.
-11. Repeat until all enemies are defeated or the player HP reaches zero.
+形状分類用データとトリガ検出用データを別ディレクトリで管理しています。トリガ動作が形状データへ混入すると分類が不安定になるため、それぞれの対象区間だけを保存します。
 
-## GAME2 Rules
+## 研究との関係
 
-GAME2 is the current main rule set.
+現在取り組んでいるスマートホーム行動認識研究とは対象・データが異なります。一方、次の技術的な問いは共通しています。
 
-- Player max HP: 220
-- Player max MP: 5
-- MP recovers by 1 each turn.
-- MP does not fully recover when moving to the next stage.
-- enemy1, enemy2, and enemy3 have 60 HP.
-- enemy4 has 150 HP.
-- Spiral costs 0 MP and deals 20 damage.
-- Star costs 3 MP and deals 60 damage.
-- Z costs 3 MP and stuns the enemy's next attack.
+- 連続したセンサログから、意味のある動作区間をどのように切り出すか
+- 抽出した時系列区間をどのように分類するか
+- 区間の切り方が認識結果へどのように影響するか
 
-Enemy actions are selected randomly from predefined action choices. enemy1, enemy2, and enemy3 choose from 30 damage, 50 damage, or idle. enemy4 chooses from 50 damage, 150 damage, or idle, and the 150 damage attack is not selected twice in a row.
+研究上の課題を説明可能な形にし、入力から結果までを体験できるデモへ落とし込むことを目的としています。
 
-## Recognition
+## 実行方法
 
-The current shape recognition system uses DTW template matching first and keeps the RandomForest classifier as a fallback.
+### 必要環境
 
-The DTW flow is:
+- Windows
+- Python 3.10以上
+- Node.js / npm（開発モードのみ）
+- スマートフォン（DeviceMotion API対応ブラウザ）
+- `cloudflared.exe`（リポジトリ直下、またはPATH上）
 
-1. Extract the input motion section.
-2. Trim a small margin at the start and end.
-3. Resample the time series to a fixed length.
-4. Normalize each axis.
-5. Compare the motion with saved training templates.
-6. Choose the closest label by distance.
-7. Use confidence and distance thresholds to reject uncertain input.
+### 開発モード
 
-The target labels are:
-
-- `circle` / Spiral
-- `star` / Star
-- `zigzag` / Z
-- `none`
-
-## Training Data
-
-Training data is stored under:
-
-```text
-backend/data/training/
-backend/data/training_trigger/
-```
-
-Shape data and trigger data are intentionally separated. Shape training data should contain only the drawing motion. Trigger data should contain only the start or end trigger gesture, plus negative examples.
-
-This separation is important because mixing the trigger gesture into shape data makes the shape classifier less stable.
-
-## Development Start
-
-Use this when developing with Vite.
+ViteとPythonバックエンドを起動します。
 
 ```powershell
-cd C:\Users\yusei\dev\m1gp-quest
+git clone https://github.com/hidayusei/m1gp-quest.git
+cd m1gp-quest
+
+python -m venv backend/.venv
+backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
+npm --prefix frontend install
+
 .\StartDevDemo.bat
 ```
 
-This starts:
+起動後のURL:
 
-- backend on `http://127.0.0.1:8000`
-- frontend on `http://127.0.0.1:5173`
-- cloudflared tunnel for the phone URL
+- PC画面: `http://127.0.0.1:5173/`
+- Backend: `http://127.0.0.1:8000/`
+- スマートフォン: 起動時に表示されるHTTPS URL
 
-The launcher also copies the phone URL to the clipboard.
+### ビルド済みデモ
 
-## Portable Demo Start
-
-Use this when running the packaged demo.
+リポジトリに含まれる `frontend/dist` をPythonバックエンドから配信します。
 
 ```powershell
+python -m venv backend/.venv
+backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
 .\StartDemo.bat
 ```
 
-This starts the backend, opens the PC battle screen, starts cloudflared, and displays a QR code for the phone URL.
+PC画面は `http://127.0.0.1:8000/` で開きます。スマートフォンでは、起動時に表示されるcloudflaredのHTTPS URLへ `?mode=phone` を付けたURLを使用します。
 
-The PC screen runs at:
+> cloudflared経由のURLは外部からアクセス可能になります。デモ中のみ起動し、終了後はランチャーから停止してください。
 
-```text
-http://127.0.0.1:8000/
-```
+## 開発用コマンド
 
-The phone should open the cloudflared HTTPS URL with:
-
-```text
-?mode=phone
-```
-
-## Manual Setup
-
-Install Python dependencies:
+Frontend:
 
 ```powershell
-cd backend
-python -m pip install -r requirements.txt
+npm --prefix frontend install
+npm --prefix frontend run build
 ```
 
-Install frontend dependencies:
+Backend:
 
 ```powershell
-cd frontend
-npm install
+backend/.venv/Scripts/python backend/server.py
 ```
 
-Build the frontend:
+分析・再学習用スクリプトは `backend/scripts/` にあります。
 
-```powershell
-cd frontend
-npm run build
-```
+## リポジトリ公開時の方針
 
-Run the backend:
+- `frontend/dist` はポータブルデモをすぐ起動できるよう意図的に追跡しています。
+- `backend/data/training*` と `backend/models` は認識デモに必要な学習サンプル・学習済みモデルとして追跡しています。
+- 実行時ログ、追加収集した生データ、仮想環境、キャッシュ、環境変数ファイルはGit管理しません。
 
-```powershell
-cd backend
-python server.py
-```
+## 現在の制約
 
-## Notes for Demonstration
+- 認識結果は端末の持ち方、動かす速さ、区間の切り方などに影響されます。
+- `backend/server.py` は複数の責務を持つ2,000行以上の大きなファイルです。今回は動作維持を優先していますが、今後はHTTP処理、セッション管理、区間抽出、分類器を段階的に分割する余地があります。
+- デモ素材の利用条件・出典は、公開前に各ファイルについて確認する必要があります。
 
-- Use GAME2 as the main demo mode.
-- Use Tap Wand mode if trigger recognition is unstable.
-- Use the Debug panel for forced skills, audio toggles, effect toggles, and recognition diagnostics.
-- Use the Training screen to collect additional shape data.
-- Keep the phone and PC on a stable network connection.
-- For iPhone sensor access, use an HTTPS phone URL.
+## License
 
-## Purpose
-
-This project is a practical prototype for showing how continuous acceleration data can be turned into game input. It connects sensor logging, motion segmentation, classification, training data collection, and game feedback in one system.
-
-The game makes the research problem easier to understand: when the motion interval is estimated correctly, the player can cast the intended skill; when the segment is noisy or incomplete, recognition becomes unstable. This relationship between motion segmentation and gameplay is the core idea of the prototype.
+現時点ではライセンスを設定していません。ソースコードや素材の再利用条件は明示していません。
